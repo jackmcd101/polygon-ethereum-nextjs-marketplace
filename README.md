@@ -20,6 +20,7 @@ const provider = new ethers.providers.JsonRpcProvider()
 
 /* to this: */
 const provider = new ethers.providers.JsonRpcProvider("https://8545-youendpoint.gitpod.io/")
+End point will be in  URL bar E.g. 8545-ivory-hornet-lqtqeq8i.ws-us11.gitpod.io  youendpoint would be 8545-ivory-hornet-lqtqeq8i.ws-us11
 ```
 
 3. Import the RPC address given to you by GitPod into your MetaMask wallet
