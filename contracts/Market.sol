@@ -4,11 +4,15 @@ pragma solidity ^0.8.3;
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol"; //SafeMath added to prevent uint overflows
+
+import "contracts/interfaces/INFT.sol"; //Using the interface of the NFT to return creator and royalty percentage
 
 import "hardhat/console.sol";
 
 contract NFTMarket is ReentrancyGuard {
   using Counters for Counters.Counter;
+  using SafeMath for uint256;
   Counters.Counter private _itemIds;
   Counters.Counter private _itemsSold;
 
@@ -23,9 +27,11 @@ contract NFTMarket is ReentrancyGuard {
     uint itemId;
     address nftContract;
     uint256 tokenId;
+	address payable creator;
     address payable seller;
     address payable owner;
     uint256 price;
+	uint8 royalty;
     bool sold;
   }
 
@@ -35,9 +41,11 @@ contract NFTMarket is ReentrancyGuard {
     uint indexed itemId,
     address indexed nftContract,
     uint256 indexed tokenId,
+	address creator,
     address seller,
     address owner,
     uint256 price,
+	uint8 royalty,
     bool sold
   );
 
@@ -62,9 +70,11 @@ contract NFTMarket is ReentrancyGuard {
       itemId,
       nftContract,
       tokenId,
+	  INFT(nftContract).creator(),
       payable(msg.sender),
       payable(address(0)),
       price,
+	  INFT(nftContract).royaltyFee(),
       false
     );
 
@@ -74,9 +84,11 @@ contract NFTMarket is ReentrancyGuard {
       itemId,
       nftContract,
       tokenId,
+	  INFT(nftContract).creator(),
       msg.sender,
       address(0),
       price,
+	  INFT(nftContract).royaltyFee(),
       false
     );
   }
@@ -91,12 +103,17 @@ contract NFTMarket is ReentrancyGuard {
     uint tokenId = idToMarketItem[itemId].tokenId;
     require(msg.value == price, "Please submit the asking price in order to complete the purchase");
 
-    idToMarketItem[itemId].seller.transfer(msg.value);
-    IERC721(nftContract).transferFrom(address(this), msg.sender, tokenId);
+	uint creatorReturns = msg.value.div(100).mul(INFT(nftContract).royaltyFee()); //Calculate creator's royalties
+	uint sellerReturns = msg.value.sub(creatorReturns); //Calculate sellers amount after royalties paid.
+
+	idToMarketItem[itemId].creator.transfer(creatorReturns); //Transfer royalties to creator
+    idToMarketItem[itemId].seller.transfer(sellerReturns); //Transfer ETH to seller
+	
+    IERC721(nftContract).transferFrom(address(this), msg.sender, tokenId); //Transfer NFT to buyer
     idToMarketItem[itemId].owner = payable(msg.sender);
     idToMarketItem[itemId].sold = true;
     _itemsSold.increment();
-    payable(owner).transfer(listingPrice);
+    payable(owner).transfer(listingPrice); //Transfer ETH from buyer to contract
   }
 
   /* Returns all unsold market items */
@@ -117,7 +134,7 @@ contract NFTMarket is ReentrancyGuard {
     return items;
   }
 
-  /* Returns onlyl items that a user has purchased */
+  /* Returns only items that a user has purchased */
   function fetchMyNFTs() public view returns (MarketItem[] memory) {
     uint totalItemCount = _itemIds.current();
     uint itemCount = 0;
@@ -164,4 +181,5 @@ contract NFTMarket is ReentrancyGuard {
     }
     return items;
   }
+  
 }
