@@ -31,7 +31,7 @@ contract NFT is ERC721URIStorage {
 
 	function changeRoyaltyFee(uint8 _royaltyFee) external {
 		require(msg.sender == creator, "Must be the NFT Creator");
-		require(_royaltyFee < 40, "Must be less than a 40 percent fee");
+		require(_royaltyFee <= 40, "Must be equal to or less than a 40 percent fee");
 
 		royaltyFee = _royaltyFee;
 	}

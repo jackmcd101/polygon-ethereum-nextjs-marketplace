@@ -31,7 +31,7 @@ contract NFTMarket is ReentrancyGuard {
     address payable seller;
     address payable owner;
     uint256 price;
-	uint8 royalty;
+	uint8 royaltyPercentage;
     bool sold;
   }
 
@@ -45,7 +45,7 @@ contract NFTMarket is ReentrancyGuard {
     address seller,
     address owner,
     uint256 price,
-	uint8 royalty,
+	uint8 royaltyPercentage,
     bool sold
   );
 
@@ -88,7 +88,7 @@ contract NFTMarket is ReentrancyGuard {
       msg.sender,
       address(0),
       price,
-	  INFT(nftContract).royaltyFee(),
+	  INFT(nftContract).royaltyFee(), //Set royalty fee percentage to the current fee set by the creator of the NFT contract (cannot be changed)
       false
     );
   }
@@ -103,7 +103,7 @@ contract NFTMarket is ReentrancyGuard {
     uint tokenId = idToMarketItem[itemId].tokenId;
     require(msg.value == price, "Please submit the asking price in order to complete the purchase");
 
-	uint creatorReturns = msg.value.div(100).mul(INFT(nftContract).royaltyFee()); //Calculate creator's royalties
+	uint creatorReturns = msg.value.div(100).mul(idToMarketItem[itemId].royaltyPercentage); //Calculate creator's royalties, which we're applied at the creation of listing
 	uint sellerReturns = msg.value.sub(creatorReturns); //Calculate sellers amount after royalties paid.
 
 	idToMarketItem[itemId].creator.transfer(creatorReturns); //Transfer royalties to creator
