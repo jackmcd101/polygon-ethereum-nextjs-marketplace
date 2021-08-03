@@ -11,9 +11,12 @@ contract NFT is ERC721URIStorage {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
     address contractAddress;
+	address payable public immutable creator; //Creator of NFT, cannot be changed
+	uint8 royaltyFee; //The royalty fee charged by Market.sol to sellers of the creator's NFT
 
     constructor(address marketplaceAddress) ERC721("Metaverse", "METT") {
         contractAddress = marketplaceAddress;
+		creator = payable(msg.sender);
     }
 
     function createToken(string memory tokenURI) public returns (uint) {
@@ -25,4 +28,11 @@ contract NFT is ERC721URIStorage {
         setApprovalForAll(contractAddress, true);
         return newItemId;
     }
+
+	function changeRoyaltyFee(uint8 _royaltyFee) external {
+		require(msg.sender == creator, "Must be the NFT Creator");
+		require(_royaltyFee <= 40, "Must be equal to or less than a 40 percent fee");
+
+		royaltyFee = _royaltyFee;
+	}
 }
